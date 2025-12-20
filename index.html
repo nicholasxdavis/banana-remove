@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- SEO Master Configuration -->
+    <title>Gemini Watermark Remover | Remove Watermarks from Gemini Images</title>
+    <meta name="description" content="Remove watermarks from Gemini-generated images, nano banana images, and AI artwork. Free watermark remover tool to clean up watermarked photos instantly in your browser. No sign-up required.">
+    <meta name="keywords" content="gemini watermark remover, remove gemini watermark, nano banana watermark remover, ai watermark remover, remove watermark from gemini images, watermark remover tool, free watermark removal">
+    <meta name="author" content="Banana Remove">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://bananaremove.com">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Gemini Watermark Remover - Remove Watermarks from Gemini Images">
+    <meta property="og:description" content="Remove watermarks from Gemini-generated images and nano banana images. Free tool to clean up watermarked AI artwork instantly.">
+    <meta property="og:image" content="https://bananaremove.com/og-image.jpg">
+    <meta property="og:url" content="https://bananaremove.com">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="img/logo.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Custom UI Tweaks */
+        :root {
+            --bg-dark: #09090b;
+            --bg-panel: #18181b;
+            --accent: #facc15;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #e4e4e7;
+            overflow: hidden; /* Prevent body scroll */
+            touch-action: none; /* Prevent mobile scroll/zoom on body */
+        }
+
+        /* Transparency Grid Pattern */
+        .transparency-grid {
+            background-color: #e5e5e5;
+            background-image: none;
+            touch-action: none; /* Critical for mobile drawing */
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #3f3f46;
+            border-radius: 2px;
+        }
+
+        /* Custom Brush Cursor */
+        .brush-cursor {
+            pointer-events: none;
+            position: fixed;
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            border-radius: 50%;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.1s, height 0.1s;
+        }
+
+        /* Loader Animation */
+        .loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #000;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        [x-cloak] { display: none !important; }
+
+        /* Custom Modal/Popup Styles */
+        .modal-overlay {
+            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-content {
+            animation: modalSlideIn 0.2s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .alert-notification {
+            animation: alertSlideIn 0.3s ease-out;
+        }
+
+        @keyframes alertSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+    </style>
+
+    <!-- Application Logic -->
+    <script>
+        window.nanoApp = function() {
+            return {
+                hasImage: false,
+                processing: false,
+                tool: 'brush', // brush, rect
+                algo: 'telea', // telea, clone
+                brushSize: 40,
+                
+                // Modal/Popup State
+                showUrlModal: false,
+                urlInput: '',
+                showAlert: false,
+                alertMessage: '',
+                
+                // Viewport State
+                zoom: 1,
+                pan: { x: 0, y: 0 },
+                isHoveringCanvas: false,
+                isDrawing: false,
+                isPanning: false,
+                lastMouse: { x: 0, y: 0 },
+                
+                // History & State
+                history: [], 
+                historyStep: -1,
+                tempOriginal: null, 
+                
+                // Canvas Contexts
+                ctx: null,
+                maskCtx: null,
+                
+                init() {
+                    this.$nextTick(() => {
+                        this.ctx = this.$refs.mainCanvas.getContext('2d', { willReadFrequently: true });
+                        this.maskCtx = this.$refs.maskCanvas.getContext('2d');
+                    });
+                    
+                    // Paste Support
+                    document.addEventListener('paste', e => {
+                        const item = Array.from(e.clipboardData.items).find(x => x.type.startsWith('image/'));
+                        if(item) this.loadFile(item.getAsFile());
+                    });
+
+                    // Global Drag/Drop Prevention
+                    document.body.addEventListener('dragover', e => e.preventDefault());
+                    document.body.addEventListener('drop', e => {
+                        e.preventDefault();
+                        if(e.dataTransfer.files[0]) this.loadFile(e.dataTransfer.files[0]);
+                    });
+                },
+
+                loadImage(e) {
+                    if (e.target.files.length) this.loadFile(e.target.files[0]);
+                },
+
+                loadFromUrl() {
+                    this.urlInput = '';
+                    this.showUrlModal = true;
+                },
+
+                confirmLoadUrl() {
+                    const url = this.urlInput.trim();
+                    if (!url) return;
+                    
+                    this.showUrlModal = false;
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = () => this.setupEditor(img);
+                    img.onerror = () => this.showAlertMessage("Failed to load image. The URL might be blocked by CORS or invalid.");
+                    img.src = url;
+                },
+
+                showAlertMessage(message) {
+                    this.alertMessage = message;
+                    this.showAlert = true;
+                    setTimeout(() => {
+                        this.showAlert = false;
+                    }, 4000);
+                },
+
+                loadFile(file) {
+                    const reader = new FileReader();
+                    reader.onload = evt => {
+                        const img = new Image();
+                        img.onload = () => this.setupEditor(img);
+                        img.src = evt.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                },
+
+                setupEditor(img) {
+                    // Set logical resolution
+                    this.$refs.mainCanvas.width = img.width;
+                    this.$refs.mainCanvas.height = img.height;
+                    this.$refs.maskCanvas.width = img.width;
+                    this.$refs.maskCanvas.height = img.height;
+
+                    this.ctx.drawImage(img, 0, 0);
+                    this.hasImage = true;
+                    
+                    this.history = [];
+                    this.historyStep = -1;
+                    this.saveState();
+                    
+                    // Reset View
+                    this.pan = { x: 0, y: 0 };
+                    this.isPanning = false; 
+                    this.isDrawing = false;
+                    
+                    // Calculate initial zoom to fit
+                    const container = this.$refs.canvasContainer;
+                    const padding = 50; // Reduced padding for mobile
+                    const scaleX = (container.clientWidth - padding) / img.width;
+                    const scaleY = (container.clientHeight - padding) / img.height;
+                    this.zoom = Math.min(1, Math.min(scaleX, scaleY));
+                    if(this.zoom < 0.1) this.zoom = 0.1;
+                },
+
+                download() {
+                    const link = document.createElement('a');
+                    link.download = 'gemini-removed.png';
+                    link.href = this.$refs.mainCanvas.toDataURL();
+                    link.click();
+                },
+
+                // --- Input Handling (Mobile & Desktop) ---
+
+                getCoords(e) {
+                    const rect = this.$refs.mainCanvas.getBoundingClientRect();
+                    // Handle both Mouse and Touch events
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    return {
+                        x: (clientX - rect.left) / this.zoom,
+                        y: (clientY - rect.top) / this.zoom
+                    };
+                },
+
+                startDraw(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Middle Mouse or Ctrl+Click triggers Pan
+                    // Note: Touch events don't usually have button/ctrlKey in the same way, assume 1-finger draw for now
+                    if (e.type === 'mousedown' && (e.ctrlKey || e.button === 1)) { 
+                        this.startPan(e);
+                        return;
+                    }
+                    
+                    // If using two fingers on touch, trigger pan/zoom (basic implementation)
+                    if (e.touches && e.touches.length > 1) {
+                         this.startPan(e); // Simplification: just pan for now
+                         return;
+                    }
+
+                    if (e.type === 'mousedown' && e.button !== 0) return; // Only Left Click
+
+                    this.isDrawing = true;
+                    this.isPanning = false; 
+                    this.draw(e);
+                },
+
+                handleGlobalMove(e) {
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                    // Update Brush Cursor Position (Desktop only visual)
+                    if (this.tool === 'brush' && !e.touches) {
+                        const cursor = this.$refs.brushCursor;
+                        cursor.style.left = clientX + 'px';
+                        cursor.style.top = clientY + 'px';
+                    }
+
+                    if (this.isPanning) {
+                        e.preventDefault();
+                        const lx = this.lastMouse.x;
+                        const ly = this.lastMouse.y;
+                        this.pan.x += clientX - lx;
+                        this.pan.y += clientY - ly;
+                        this.lastMouse = { x: clientX, y: clientY };
+                        return;
+                    }
+
+                    if (this.isDrawing) {
+                        this.draw(e);
+                    }
+                },
+
+                handleGlobalUp() {
+                    this.isDrawing = false;
+                    this.isPanning = false;
+                    if(this.maskCtx) this.maskCtx.beginPath();
+                },
+
+                draw(e) {
+                    if(!this.maskCtx) return;
+                    const pos = this.getCoords(e);
+                    
+                    this.maskCtx.fillStyle = 'rgba(250, 204, 21, 1)'; // Yellow accent
+                    
+                    if (this.tool === 'brush') {
+                        this.maskCtx.beginPath();
+                        this.maskCtx.arc(pos.x, pos.y, this.brushSize / 2, 0, Math.PI * 2);
+                        this.maskCtx.fill();
+                    } else if (this.tool === 'rect') {
+                        const s = this.brushSize;
+                        this.maskCtx.fillRect(pos.x - s/2, pos.y - s/2, s, s);
+                    }
+                },
+
+                handleWheel(e) {
+                    e.preventDefault();
+                    if (e.ctrlKey || e.metaKey || e.deltaY === 0) {
+                        // Pinch/Zoom logic
+                        const zoomFactor = -e.deltaY * 0.001;
+                        if(e.deltaY === 0) return; 
+                        const newZoom = Math.min(Math.max(0.05, this.zoom + zoomFactor), 10);
+                        this.zoom = newZoom;
+                    } else {
+                        // Pan logic
+                        this.pan.x -= e.deltaX;
+                        this.pan.y -= e.deltaY;
+                    }
+                },
+
+                startPan(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.isPanning = true;
+                    this.isDrawing = false;
+                    
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    
+                    this.lastMouse = { x: clientX, y: clientY };
+                },
+
+                // --- Image Processing ---
+
+                async process() {
+                    if (this.processing) return;
+                    this.processing = true;
+
+                    await new Promise(r => requestAnimationFrame(r));
+                    await new Promise(r => setTimeout(r, 50));
+
+                    const w = this.$refs.mainCanvas.width;
+                    const h = this.$refs.mainCanvas.height;
+                    
+                    const srcData = this.ctx.getImageData(0, 0, w, h);
+                    const maskData = this.maskCtx.getImageData(0, 0, w, h);
+                    
+                    let minX = w, minY = h, maxX = 0, maxY = 0;
+                    let hasMask = false;
+                    
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w; x++) {
+                            const i = (y * w + x) * 4;
+                            if (maskData.data[i + 3] > 0) {
+                                if (x < minX) minX = x;
+                                if (x > maxX) maxX = x;
+                                if (y < minY) minY = y;
+                                if (y > maxY) maxY = y;
+                                hasMask = true;
+                            }
+                        }
+                    }
+
+                    if (!hasMask) {
+                        this.processing = false;
+                        return;
+                    }
+
+                    const pad = 10;
+                    minX = Math.max(0, minX - pad);
+                    minY = Math.max(0, minY - pad);
+                    maxX = Math.min(w - 1, maxX + pad);
+                    maxY = Math.min(h - 1, maxY + pad);
+                    
+                    const roiW = maxX - minX;
+                    const roiH = maxY - minY;
+
+                    if (this.algo === 'telea') {
+                        this.inpaintTelea(srcData, maskData, minX, minY, roiW, roiH, w);
+                    } else {
+                        this.inpaintClone(srcData, maskData, minX, minY, roiW, roiH, w);
+                    }
+
+                    this.ctx.putImageData(srcData, 0, 0);
+                    this.maskCtx.clearRect(0, 0, w, h);
+                    
+                    this.saveState();
+                    this.processing = false;
+                },
+
+                inpaintTelea(img, mask, sx, sy, sw, sh, fullW) {
+                    const data = img.data;
+                    const mData = mask.data;
+                    const passes = 40; 
+                    const buffer = new Float32Array(sw * sh * 3);
+                    
+                    for (let y = 0; y < sh; y++) {
+                        for (let x = 0; x < sw; x++) {
+                            const gx = sx + x;
+                            const gy = sy + y;
+                            const idx = (gy * fullW + gx) * 4;
+                            const bIdx = (y * sw + x) * 3;
+                            
+                            if (mData[idx+3] === 0) {
+                                buffer[bIdx] = data[idx];
+                                buffer[bIdx+1] = data[idx+1];
+                                buffer[bIdx+2] = data[idx+2];
+                            } else {
+                                buffer[bIdx] = -1;
+                            }
+                        }
+                    }
+
+                    let borderR=0, borderG=0, borderB=0, count=0;
+                    for(let i=0; i<buffer.length; i+=3) {
+                        if(buffer[i] !== -1) {
+                            borderR += buffer[i];
+                            borderG += buffer[i+1];
+                            borderB += buffer[i+2];
+                            count++;
+                        }
+                    }
+                    const avgR = count ? borderR/count : 0;
+                    const avgG = count ? borderG/count : 0;
+                    const avgB = count ? borderB/count : 0;
+                    
+                    for(let i=0; i<buffer.length; i+=3) {
+                        if(buffer[i] === -1) {
+                            buffer[i] = avgR; buffer[i+1] = avgG; buffer[i+2] = avgB;
+                        }
+                    }
+
+                    for (let pass = 0; pass < passes; pass++) {
+                        const startY = pass % 2 === 0 ? 1 : sh - 2;
+                        const endY = pass % 2 === 0 ? sh - 1 : 0;
+                        const stepY = pass % 2 === 0 ? 1 : -1;
+                        
+                        for (let y = startY; y !== endY; y += stepY) {
+                            for (let x = 1; x < sw - 1; x++) {
+                                const gx = sx + x;
+                                const gy = sy + y;
+                                const idx = (gy * fullW + gx) * 4;
+
+                                if (mData[idx+3] > 0) {
+                                    const bIdx = (y * sw + x) * 3;
+                                    let sumR = 0, sumG = 0, sumB = 0, wSum = 0;
+                                    
+                                    const neighbors = [
+                                        ((y-1)*sw + x)*3,
+                                        ((y+1)*sw + x)*3,
+                                        (y*sw + (x-1))*3,
+                                        (y*sw + (x+1))*3
+                                    ];
+
+                                    for(let nIdx of neighbors) {
+                                        sumR += buffer[nIdx];
+                                        sumG += buffer[nIdx+1];
+                                        sumB += buffer[nIdx+2];
+                                        wSum++;
+                                    }
+
+                                    if (wSum > 0) {
+                                        buffer[bIdx] = sumR / wSum;
+                                        buffer[bIdx+1] = sumG / wSum;
+                                        buffer[bIdx+2] = sumB / wSum;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    for (let y = 0; y < sh; y++) {
+                        for (let x = 0; x < sw; x++) {
+                            const gx = sx + x;
+                            const gy = sy + y;
+                            const idx = (gy * fullW + gx) * 4;
+                            
+                            if (mData[idx+3] > 0) {
+                                const bIdx = (y * sw + x) * 3;
+                                const noise = (Math.random() - 0.5) * 10; 
+                                
+                                data[idx] = Math.min(255, Math.max(0, buffer[bIdx] + noise));
+                                data[idx+1] = Math.min(255, Math.max(0, buffer[bIdx+1] + noise));
+                                data[idx+2] = Math.min(255, Math.max(0, buffer[bIdx+2] + noise));
+                            }
+                        }
+                    }
+                },
+
+                inpaintClone(img, mask, sx, sy, sw, sh, fullW) {
+                    const data = img.data;
+                    const mData = mask.data;
+                    
+                    const patchSize = 8;
+                    const patches = Math.floor((sw * sh) / 10); 
+
+                    for(let p = 0; p < patches; p++) {
+                        const rx = Math.floor(Math.random() * sw);
+                        const ry = Math.floor(Math.random() * sh);
+                        
+                        const gx = sx + rx;
+                        const gy = sy + ry;
+                        const idx = (gy * fullW + gx) * 4;
+
+                        if (mData[idx+3] > 0) { 
+                            let bestSrcX = -1, bestSrcY = -1;
+                            let attempts = 0;
+                            
+                            while(attempts < 20) {
+                                const angle = Math.random() * Math.PI * 2;
+                                const dist = 30 + Math.random() * 120;
+                                const tx = Math.floor(gx + Math.cos(angle) * dist);
+                                const ty = Math.floor(gy + Math.sin(angle) * dist);
+                                
+                                if (tx >= 0 && tx < fullW && ty >= 0 && ty < this.$refs.mainCanvas.height) {
+                                    const tIdx = (ty * fullW + tx) * 4;
+                                    if (mData[tIdx+3] === 0) { 
+                                        bestSrcX = tx;
+                                        bestSrcY = ty;
+                                        break;
+                                    }
+                                }
+                                attempts++;
+                            }
+
+                            if (bestSrcX !== -1) {
+                                for(let py = 0; py < patchSize; py++) {
+                                    for(let px = 0; px < patchSize; px++) {
+                                        const dX = gx + px - patchSize/2;
+                                        const dY = gy + py - patchSize/2;
+                                        const sX = bestSrcX + px - patchSize/2;
+                                        const sY = bestSrcY + py - patchSize/2;
+
+                                        if (dX >= 0 && dX < fullW && sX >= 0 && sX < fullW) {
+                                            const dI = (dY * fullW + dX) * 4;
+                                            const sI = (sY * fullW + sX) * 4;
+                                            
+                                            data[dI] = data[sI];
+                                            data[dI+1] = data[sI+1];
+                                            data[dI+2] = data[sI+2];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+
+                saveState() {
+                    if (this.historyStep < this.history.length - 1) {
+                        this.history = this.history.slice(0, this.historyStep + 1);
+                    }
+                    const data = this.ctx.getImageData(0, 0, this.$refs.mainCanvas.width, this.$refs.mainCanvas.height);
+                    this.history.push(data);
+                    this.historyStep++;
+                    if (this.history.length > 20) {
+                        this.history.shift();
+                        this.historyStep--;
+                    }
+                },
+
+                undo() {
+                    if (this.historyStep > 0) {
+                        this.historyStep--;
+                        this.ctx.putImageData(this.history[this.historyStep], 0, 0);
+                    }
+                },
+
+                startCompare() {
+                    if (this.historyStep < 0) return;
+                    this.tempOriginal = this.ctx.getImageData(0, 0, this.$refs.mainCanvas.width, this.$refs.mainCanvas.height);
+                    this.ctx.putImageData(this.history[0], 0, 0);
+                },
+
+                endCompare() {
+                    if (this.tempOriginal) {
+                        this.ctx.putImageData(this.tempOriginal, 0, 0);
+                        this.tempOriginal = null;
+                    }
+                }
+            };
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+</head>
+<body x-data="nanoApp()" x-cloak class="select-none flex flex-col h-screen w-full">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-14 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0 z-30 relative">
+        <div class="flex items-center gap-4">
+            <!-- Logo - Updated to image -->
+            <a href="/" class="flex items-center" aria-label="Gemini Watermark Remover">
+                <img src="img/logo.png" alt="Gemini Watermark Remover" class="h-8 w-auto object-contain">
+            </a>
+            
+            <div class="h-5 w-[1px] bg-zinc-800 mx-2 hidden sm:block"></div>
+
+            <!-- File Actions -->
+            <div class="flex gap-2 items-center">
+                <button @click="$refs.fileInput.click()" class="px-3 py-1.5 rounded-md text-xs font-bold bg-yellow-400 text-black hover:bg-yellow-300 transition flex items-center gap-2 shadow-[0_0_10px_rgba(250,204,21,0.2)] whitespace-nowrap">
+                    <i class="fa-solid fa-folder-open"></i> <span class="hidden sm:inline">Open</span>
+                </button>
+                <input x-ref="fileInput" type="file" accept="image/*" class="hidden" @change="loadImage($event)">
+
+                <button @click="loadFromUrl()" class="px-3 py-1.5 rounded-md text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition flex items-center gap-2 border border-transparent hover:border-zinc-700 whitespace-nowrap">
+                    <i class="fa-solid fa-link"></i> <span class="hidden sm:inline">URL</span>
+                </button>
+
+                <a href="https://buymeacoffee.com/galore" target="_blank" class="px-3 py-1.5 rounded-md text-xs font-medium text-zinc-400 hover:bg-zinc-800 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+                    <i class="fa-solid fa-mug-hot"></i> <span class="hidden sm:inline">Support</span>
+                </a>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <span x-show="hasImage" class="text-xs text-zinc-500 font-mono hidden sm:inline" x-text="Math.round($refs.mainCanvas.width) + ' × ' + Math.round($refs.mainCanvas.height) + ' px'"></span>
+            <button @click="download()" :disabled="!hasImage" class="px-4 py-1.5 rounded bg-white text-black hover:bg-zinc-200 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/5">
+                <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Export</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Toolbar (Glassy Panel) -->
+        <aside class="w-16 bg-zinc-950 border-r border-zinc-800 flex flex-col items-center py-4 gap-4 z-20 shrink-0">
+            
+            <div class="flex flex-col gap-2 w-full px-2">
+                <button @click="tool = 'brush'" 
+                        class="w-full aspect-square rounded-lg flex items-center justify-center transition-all relative group"
+                        :class="tool === 'brush' ? 'bg-zinc-800 text-yellow-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200'">
+                    <i class="fa-solid fa-paintbrush text-lg"></i>
+                    <!-- Tooltip Hidden on mobile for cleaner UI -->
+                    <span class="hidden sm:block absolute left-full ml-3 px-2 py-1 bg-zinc-800 text-xs text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-50 border border-zinc-700">Brush Tool</span>
+                </button>
+
+                <button @click="tool = 'rect'" 
+                        class="w-full aspect-square rounded-lg flex items-center justify-center transition-all relative group"
+                        :class="tool === 'rect' ? 'bg-zinc-800 text-yellow-400 shadow-inner' : 'text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200'">
+                    <i class="fa-regular fa-square text-lg"></i>
+                    <span class="hidden sm:block absolute left-full ml-3 px-2 py-1 bg-zinc-800 text-xs text-white rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none z-50 border border-zinc-700">Rectangle Marquee</span>
+                </button>
+            </div>
+
+            <div class="w-8 h-[1px] bg-zinc-800"></div>
+
+            <div class="flex flex-col gap-3 items-center">
+                 <button @click="undo()" :disabled="historyStep <= 0" class="w-10 h-10 rounded-full flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 transition disabled:opacity-20">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button @mousedown="startCompare" @mouseup="endCompare" @mouseleave="endCompare" 
+                        @touchstart="startCompare" @touchend="endCompare"
+                        :disabled="!hasImage" class="w-10 h-10 rounded-full flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 transition disabled:opacity-20 cursor-help">
+                    <i class="fa-solid fa-eye"></i>
+                </button>
+            </div>
+
+        </aside>
+
+        <!-- Main Canvas Area -->
+        <main class="flex-1 relative bg-zinc-950 flex flex-col min-w-0">
+            
+            <!-- Canvas Container -->
+            <div x-ref="canvasContainer" 
+                 class="flex-1 relative overflow-hidden flex items-center justify-center transparency-grid cursor-default"
+                 @wheel.prevent="handleWheel"
+                 @mousedown.middle="startPan"
+                 
+                 @mousedown.prevent.stop="startDraw"
+                 @touchstart.prevent.stop="startDraw"
+
+                 @mousemove.window="handleGlobalMove"
+                 @touchmove.window="handleGlobalMove"
+
+                 @mouseup.window="handleGlobalUp"
+                 @touchend.window="handleGlobalUp"
+                 
+                 @contextmenu.prevent>
+                
+                <!-- Empty State -->
+                <div x-show="!hasImage" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+                    <div class="w-64 h-48 border-2 border-dashed border-zinc-700 rounded-xl flex flex-col items-center justify-center bg-zinc-800/10 backdrop-blur-sm">
+                        <i class="fa-solid fa-image text-4xl mb-4 text-zinc-500"></i>
+                        <p class="text-zinc-600 font-medium text-sm">Drag & Drop Image Here</p>
+                        <p class="text-zinc-500 text-xs mt-2">or use Open button</p>
+                    </div>
+                </div>
+
+                <!-- Custom Brush Cursor (Hidden on touch devices usually, but logic handles it via touch check) -->
+                <div x-ref="brushCursor" class="brush-cursor" 
+                     :style="`width: ${brushSize * zoom}px; height: ${brushSize * zoom}px; opacity: ${isHoveringCanvas && tool === 'brush' && !isPanning ? 1 : 0}`">
+                </div>
+
+                <!-- Canvas Stage -->
+                <div x-show="hasImage" x-ref="stage" class="relative shadow-[0_0_50px_rgba(0,0,0,0.5)] origin-center will-change-transform" 
+                     :style="`transform: translate(${pan.x}px, ${pan.y}px) scale(${zoom})`">
+                    
+                    <canvas x-ref="mainCanvas" class="block" draggable="false"></canvas>
+                    <canvas x-ref="maskCanvas" class="absolute top-0 left-0 w-full h-full opacity-60 pointer-events-none mix-blend-plus-lighter" draggable="false"></canvas>
+                    
+                    <!-- Interaction Layer -->
+                    <!-- Events are handled on parent container to catch "outside" moves better, but this layer helps with cursors -->
+                    <div class="absolute inset-0 z-10 outline-none"
+                         :class="{ 'cursor-none': tool === 'brush' && !isPanning, 'cursor-crosshair': tool === 'rect', 'cursor-grab': isPanning, 'cursor-grabbing': isPanning && isDrawing }"
+                         @mouseenter="isHoveringCanvas = true"
+                         @mouseleave="isHoveringCanvas = false">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Floating Controls -->
+            <div x-show="hasImage" class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20 pointer-events-none w-full justify-center px-4">
+                
+                <!-- Action Bar -->
+                <!-- Updated background to bg-zinc-950 as requested -->
+                <div class="bg-zinc-950 border border-zinc-800 p-2 rounded-xl shadow-2xl flex items-center gap-4 pointer-events-auto">
+                    
+                    <!-- Brush Size -->
+                    <div class="flex items-center gap-3 px-2 border-r border-zinc-800 pr-4">
+                        <span class="text-[10px] font-bold text-zinc-500 uppercase hidden sm:inline">Size</span>
+                        <input type="range" min="5" max="200" x-model.number="brushSize" class="w-20 sm:w-24">
+                        <span class="text-xs font-mono w-6 text-right text-zinc-300" x-text="brushSize"></span>
+                    </div>
+
+                    <!-- Algorithm -->
+                    <div class="flex bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+                        <button @click="algo = 'telea'" class="px-2 sm:px-3 py-1 rounded text-xs font-medium transition" :class="algo === 'telea' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'">Smart</button>
+                        <button @click="algo = 'clone'" class="px-2 sm:px-3 py-1 rounded text-xs font-medium transition" :class="algo === 'clone' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'">Texture</button>
+                    </div>
+
+                    <!-- Main Button -->
+                    <button @click="process()" :disabled="processing" class="h-9 px-4 sm:px-6 bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xs rounded-lg shadow-[0_0_15px_rgba(250,204,21,0.2)] transition active:scale-95 disabled:opacity-50 disabled:scale-100 flex items-center gap-2 min-w-[80px] sm:min-w-[100px] justify-center">
+                        <span x-show="!processing">REMOVE</span>
+                        <span x-show="processing" class="loader !w-3 !h-3 !border-black/50 !border-b-transparent"></span>
+                    </button>
+                </div>
+
+                <!-- Zoom Pill -->
+                <!-- Updated background to bg-zinc-950 as requested -->
+                <div class="hidden sm:flex bg-zinc-950 border border-zinc-800 px-3 py-2 rounded-full shadow-xl pointer-events-auto items-center gap-2">
+                    <button @click="zoom = Math.max(0.1, zoom - 0.1)" class="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-white"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                    <span class="text-xs font-mono text-zinc-300 w-10 text-center select-none" x-text="Math.round(zoom * 100) + '%'"></span>
+                    <button @click="zoom = Math.min(10, zoom + 0.1)" class="w-5 h-5 flex items-center justify-center text-zinc-400 hover:text-white"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Custom URL Input Modal -->
+    <div x-show="showUrlModal" 
+         x-cloak
+         @keydown.escape.window="showUrlModal = false"
+         class="fixed inset-0 z-50 modal-overlay flex items-center justify-center"
+         @click.self="showUrlModal = false">
+        <div class="modal-content bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-white">Load Image from URL</h3>
+                <button @click="showUrlModal = false" class="text-zinc-400 hover:text-white transition">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <p class="text-sm text-zinc-400 mb-4">Enter an image url.</p>
+            <input 
+                type="text" 
+                x-model="urlInput"
+                @keydown.enter="confirmLoadUrl()"
+                placeholder="https://example.com/image.jpg"
+                class="w-full px-4 py-2.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent mb-4">
+            <div class="flex gap-3 justify-end">
+                <button @click="showUrlModal = false" class="px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition">
+                    Cancel
+                </button>
+                <button @click="confirmLoadUrl()" class="px-4 py-2 rounded-lg text-sm font-bold bg-yellow-400 text-black hover:bg-yellow-300 transition shadow-[0_0_10px_rgba(250,204,21,0.2)]">
+                    Load
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Notification -->
+    <div x-show="showAlert" 
+         x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-2"
+         class="fixed top-20 left-1/2 -translate-x-1/2 z-50 alert-notification">
+        <div class="bg-zinc-950 border border-zinc-800 rounded-lg shadow-2xl px-5 py-4 flex items-center gap-3 max-w-md mx-4">
+            <div class="flex-shrink-0 w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                <i class="fa-solid fa-exclamation text-red-400 text-xs"></i>
+            </div>
+            <p class="text-sm text-white flex-1" x-text="alertMessage"></p>
+            <button @click="showAlert = false" class="flex-shrink-0 text-zinc-400 hover:text-white transition">
+                <i class="fa-solid fa-times text-xs"></i>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
