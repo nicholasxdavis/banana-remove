@@ -1,4 +1,4 @@
-![Compare](https://nicholasxdavis.github.io/BN-db1/img/compare.png)
+![Compare](https://nicholasxdavis.github.io/BN-db1/img/compare.jpg)
 
 <div align="center">
 
