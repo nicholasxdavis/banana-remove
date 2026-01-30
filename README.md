@@ -2,7 +2,7 @@
 
 <img src="https://github.com/nicholasxdavis/banana-remove/blob/main/img/logo.png?raw=true" alt="Nano Banana Logo" width="120" />
 
-# Gemini Watermark Remover
+# Gemini Watermark Remover (Banana Remove)
 
 **The privacy-focused, client-side tool for cleaning Gemini-generated imagery.**
 
