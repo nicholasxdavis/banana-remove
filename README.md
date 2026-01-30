@@ -6,7 +6,7 @@
 
 **The privacy-focused, client-side tool for cleaning Gemini-generated imagery.**
 
-[Live Demo](https://bananaremove.com) • [Report Bug](https://github.com/nicholasxdavis/banana-remove/issues) • [Request Feature](https://github.com/nicholasxdavis/banana-remove/issues)
+[Live Demo](https://nicholasxdavis.github.io/banana-remove/) • [Report Bug](https://github.com/nicholasxdavis/banana-remove/issues) • [Request Feature](https://github.com/nicholasxdavis/banana-remove/issues)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tech Stack](https://img.shields.io/badge/Stack-Alpine.js%20%7C%20Tailwind-yellow)](https://github.com/nicholasxdavis/banana-remove)
