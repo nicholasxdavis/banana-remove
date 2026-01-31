@@ -4,7 +4,7 @@
 
 # Gemini Watermark Remover (Banana Remove)
 
-**The privacy-focused, client-side tool for cleaning Gemini-generated imagery.**
+**client-side tool for cleaning Gemini-generated imagery.**
 
 [Live Demo](https://nicholasxdavis.github.io/banana-remove/) • [Report Bug](https://github.com/nicholasxdavis/banana-remove/issues) • [Request Feature](https://github.com/nicholasxdavis/banana-remove/issues)
 
