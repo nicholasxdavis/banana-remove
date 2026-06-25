@@ -1,3 +1,5 @@
+This project is no longer actively maintained.
+
 <div align="center">
 
 <img src="https://github.com/nicholasxdavis/banana-remove/blob/main/img/logo.png?raw=true" alt="Nano Banana Logo" width="120" />
